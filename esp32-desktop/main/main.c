@@ -18,6 +18,8 @@
 #include "json_generator.h"
 #include "json_parser.h"
 #include "led_strip.h"
+#include <hd44780.h>
+#include <pcf8574.h>
 
 #include <math.h>
 #include <stdio.h>
@@ -97,6 +99,17 @@ hsv_t hsv = {
 };
 
 mode_t mode = WHITE;
+
+esp_err_t write_lcd_data(const hd44780_t *lcd, uint8_t data);
+
+hd44780_t lcd = {
+    .write_cb = write_lcd_data,
+    .font = HD44780_FONT_5X8,
+    .lines = 2,
+    .pins = {.rs = 0, .e = 2, .d4 = 4, .d5 = 5, .d6 = 6, .d7 = 7, .bl = 3}};
+
+
+static i2c_dev_t pcf8574;
 
 static rgb_t hsv2rgb(int16_t h, float s, float v) {
   int16_t h2 = h / 60;
@@ -499,8 +512,36 @@ void read_dht11() {
   if (dht_read_float_data(DHT_TYPE_DHT11, CONFIG_DHT11_GPIO, &humidity,
                           &temperature) == ESP_OK) {
     last_read = time_us;
+    char humidity_text[16];
+    char temperature_text[16];
+    memset(humidity_text, '\0', sizeof(humidity_text));
+    memset(temperature_text, '\0', sizeof(temperature_text));
+    sprintf(humidity_text, "Humidity: %.1f%%", humidity);
+    sprintf(temperature_text, "Temp: %.1fC", temperature);
     printf("Humidity: %.1f%% Temp: %.1fC\n", humidity, temperature);
+
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, humidity_text);
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, temperature_text);
   }
+}
+
+esp_err_t write_lcd_data(const hd44780_t *lcd, uint8_t data) {
+  return pcf8574_port_write(&pcf8574, data);
+}
+
+void lcd_init() {
+
+  memset(&pcf8574, 0, sizeof(i2c_dev_t));
+  ESP_ERROR_CHECK(pcf8574_init_desc(&pcf8574, 0x27, 0, CONFIG_LCD_SDA_PIN,
+                                    CONFIG_LCD_SCL_PIN));
+  ESP_ERROR_CHECK(hd44780_init(&lcd));
+
+  hd44780_clear(&lcd);
+  hd44780_switch_backlight(&lcd, false);
+  hd44780_gotoxy(&lcd, 0, 0);
+  hd44780_puts(&lcd, "Hello world!");
 }
 
 void app_main() {
@@ -509,6 +550,9 @@ void app_main() {
   setup_json_parser();
 
   ESP_ERROR_CHECK(nvs_flash_init());
+  ESP_ERROR_CHECK(i2cdev_init());
+
+  lcd_init();
 
   while (1) {
     ESP_LOGI(TAG, "wifi init sta...");
@@ -522,7 +566,7 @@ void app_main() {
     while (server) {
       display_color();
       read_dht11();
-      vTaskDelay(CONFIG_LEDSTRIP_PERIOD / portTICK_PERIOD_MS);
+      vTaskDelay(pdMS_TO_TICKS(CONFIG_LEDSTRIP_PERIOD));
     }
     vTaskDelay(100000 / portTICK_PERIOD_MS);
   }

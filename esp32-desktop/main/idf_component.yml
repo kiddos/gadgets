@@ -4,3 +4,5 @@ dependencies:
   espressif/jsmn: ^1.1.0
   espressif/led_strip: ^2.0.0
   esp-idf-lib/dht: ^1.1.7
+  esp-idf-lib/hd44780: '*'
+  esp-idf-lib/pcf8574: '*'

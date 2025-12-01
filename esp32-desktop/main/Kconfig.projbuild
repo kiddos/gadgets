@@ -5,7 +5,7 @@ menu "LED strip Configuration"
     config LED_GPIO
         int "LED GPIO number"
         range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
-        default 22 if IDF_TARGET_ESP32
+        default 5 if IDF_TARGET_ESP32
         default 18 if IDF_TARGET_ESP32S2
         default 48 if IDF_TARGET_ESP32S3
         default 8
@@ -21,9 +21,16 @@ menu "LED strip Configuration"
             Define the ledstrip control period in milliseconds.
 
     config DHT11_GPIO
-        int ""
+        int "DHT11 temperature sensor"
         default 23
 
+    config LCD_SDA_PIN
+        int "LCD SDA pin"
+        default 21
+
+    config LCD_SCL_PIN
+        int "LCD SCL pin"
+        default 22
 
     config ESP_WIFI_SSID
         string "WiFi SSID"
