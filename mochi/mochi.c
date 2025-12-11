@@ -47,6 +47,8 @@ void process_command(char *command) {
   } else if (strcmp(command, "cute") == 0) {
     current_frame = &mochi_cute_frames;
     printf("cute\n");
+  } else if (strcmp(command, "none") == 0) {
+    current_frame = NULL;
   } else {
     printf("unknown\n");
   }
@@ -82,7 +84,11 @@ int main() {
     read_command();
 
     uint32_t t = to_ms_since_boot(get_absolute_time());
-    Paint_DrawImage((*current_frame)[f], 0, 0, screen_width, screen_height);
+    if (current_frame) {
+      Paint_DrawImage((*current_frame)[f], 0, 0, screen_width, screen_height);
+    } else {
+      Paint_Clear(BLACK);
+    }
     LCD_1IN8_Display(image_data);
     if (t - last >= 33) {
       f = (f + 1) % 10;
