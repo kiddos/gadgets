@@ -59,7 +59,7 @@
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT BIT1
 
-static const char *TAG = "ledstrip";
+static const char *TAG = "desktop";
 
 static esp_chip_info_t chip_info;
 static led_strip_handle_t led_strip;
@@ -153,21 +153,17 @@ static void display_color(void) {
     for (int i = 0; i < LED_COUNT; ++i) {
       /* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
       led_strip_set_pixel(led_strip, i, brightness, brightness, brightness);
-      /* Refresh the strip to send data */
-      led_strip_refresh(led_strip);
     }
   } else if (mode == RGB) {
     for (int i = 0; i < LED_COUNT; ++i) {
       rgb_t rgb = hsv2rgb((hsv.h + delta * i + 360) % 360, hsv.s, hsv.v);
       led_strip_set_pixel(led_strip, i, rgb.r, rgb.g, rgb.b);
-      led_strip_refresh(led_strip);
     }
     hsv.h = (hsv.h + delta + 360) % 360;
   } else if (mode == RANDOM) {
     for (int i = 0; i < LED_COUNT; ++i) {
       rgb_t rgb = hsv2rgb((hsv.h + random_offset[i]) % 360, hsv.s, hsv.v);
       led_strip_set_pixel(led_strip, i, rgb.r, rgb.g, rgb.b);
-      led_strip_refresh(led_strip);
     }
     hsv.h = (hsv.h + delta + 360) % 360;
   } else if (mode == BREATHING) {
@@ -178,9 +174,10 @@ static void display_color(void) {
     for (int i = 0; i < LED_COUNT; ++i) {
       int b = round((sin(time_second * M_PI) + 1) * 0.5 * brightness);
       led_strip_set_pixel(led_strip, i, b, b, b);
-      led_strip_refresh(led_strip);
     }
   }
+  /* Refresh the strip to send data */
+  led_strip_refresh(led_strip);
 }
 
 static void configure_led() {
@@ -297,6 +294,7 @@ static esp_err_t ledstrip_handler(httpd_req_t *req) {
   json_gen_str_end(&jstr);
 
   httpd_resp_set_hdr(req, "Content-Type", "application/json");
+  httpd_resp_set_hdr(req, "Connection", "close");
 
   httpd_resp_send(req, response_buffer, HTTPD_RESP_USE_STRLEN);
   return ESP_OK;
@@ -417,6 +415,7 @@ static esp_err_t info_handler(httpd_req_t *req) {
   json_gen_str_end(&jstr);
 
   httpd_resp_set_hdr(req, "Content-Type", "application/json");
+  httpd_resp_set_hdr(req, "Connection", "close");
 
   httpd_resp_send(req, info_buffer, HTTPD_RESP_USE_STRLEN);
   return ESP_OK;
@@ -445,6 +444,7 @@ static esp_err_t dht11_data_handler(httpd_req_t *req) {
   json_gen_str_end(&jstr);
 
   httpd_resp_set_hdr(req, "Content-Type", "application/json");
+  httpd_resp_set_hdr(req, "Connection", "close");
 
   httpd_resp_send(req, dht11_buffer, HTTPD_RESP_USE_STRLEN);
   return ESP_OK;
