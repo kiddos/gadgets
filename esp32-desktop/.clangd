@@ -1,5 +1,6 @@
 CompileFlags:
   Remove: [
+    -fno-shrink-wrap,
     -fno-tree-switch-conversion,
     -mtext-section-literals,
     -mlongcalls,

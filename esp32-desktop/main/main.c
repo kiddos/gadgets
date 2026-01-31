@@ -18,6 +18,7 @@
 #include "json_generator.h"
 #include "json_parser.h"
 #include "led_strip.h"
+#include "mdns.h"
 #include <hd44780.h>
 #include <pcf8574.h>
 
@@ -532,7 +533,6 @@ esp_err_t write_lcd_data(const hd44780_t *lcd, uint8_t data) {
 }
 
 void lcd_init() {
-
   memset(&pcf8574, 0, sizeof(i2c_dev_t));
   ESP_ERROR_CHECK(pcf8574_init_desc(&pcf8574, 0x27, 0, CONFIG_LCD_SDA_PIN,
                                     CONFIG_LCD_SCL_PIN));
@@ -542,6 +542,20 @@ void lcd_init() {
   hd44780_switch_backlight(&lcd, false);
   hd44780_gotoxy(&lcd, 0, 0);
   hd44780_puts(&lcd, "Hello world!");
+}
+
+void init_mdns(void) {
+  esp_err_t err = mdns_init();
+  if (err) {
+    printf("mDNS Init failed: %d\n", err);
+    return;
+  }
+
+  ESP_LOGI(TAG, "setting up mdns...");
+  mdns_hostname_set("esp32-desktop");
+  mdns_instance_name_set("ESP32 Desktop");
+  mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+  ESP_LOGI(TAG, "hostname: esp32-desktop");
 }
 
 void app_main() {
@@ -557,6 +571,8 @@ void app_main() {
   while (1) {
     ESP_LOGI(TAG, "wifi init sta...");
     ESP_ERROR_CHECK(wifi_init_sta());
+
+    init_mdns();
 
     ESP_LOGI(TAG, "register event handler...");
     ESP_ERROR_CHECK(esp_event_handler_register(
