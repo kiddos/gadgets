@@ -1,6 +1,7 @@
 # esp32-desktop
 
 ```sh
+idf.py set-target esp32
 idf.py menuconfig
 ```
 
